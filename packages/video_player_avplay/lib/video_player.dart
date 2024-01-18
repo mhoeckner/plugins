@@ -56,10 +56,7 @@ class VideoPlayerValue {
   });
 
   /// Returns an instance for a video that hasn't been loaded.
-  VideoPlayerValue.uninitialized()
-      : this(
-            duration: DurationRange(Duration.zero, Duration.zero),
-            isInitialized: false);
+  VideoPlayerValue.uninitialized() : this(duration: DurationRange(Duration.zero, Duration.zero), isInitialized: false);
 
   /// Returns an instance with the given [errorDescription].
   VideoPlayerValue.erroneous(String errorDescription)
@@ -176,9 +173,7 @@ class VideoPlayerValue {
       isBuffering: isBuffering ?? this.isBuffering,
       volume: volume ?? this.volume,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
-      errorDescription: errorDescription != _defaultErrorDescription
-          ? errorDescription
-          : this.errorDescription,
+      errorDescription: errorDescription != _defaultErrorDescription ? errorDescription : this.errorDescription,
     );
   }
 
@@ -228,8 +223,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
-        super(VideoPlayerValue(
-            duration: DurationRange(Duration.zero, Duration.zero)));
+        super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// Constructs a [VideoPlayerController] playing a video from obtained from
   /// the network.
@@ -250,8 +244,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     this.playerOptions,
   })  : dataSourceType = DataSourceType.network,
         package = null,
-        super(VideoPlayerValue(
-            duration: DurationRange(Duration.zero, Duration.zero)));
+        super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// Constructs a [VideoPlayerController] playing a video from a file.
   ///
@@ -268,8 +261,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
-        super(VideoPlayerValue(
-            duration: DurationRange(Duration.zero, Duration.zero)));
+        super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// Constructs a [VideoPlayerController] playing a video from a contentUri.
   ///
@@ -288,8 +280,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
-        super(VideoPlayerValue(
-            duration: DurationRange(Duration.zero, Duration.zero)));
+        super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// The URI to the video file. This will be in different formats depending on
   /// the [DataSourceType] of the original video.
@@ -347,13 +338,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   @visibleForTesting
   int get playerId => _playerId;
 
-  final MethodChannel _channel =
-      const MethodChannel('dev.flutter.videoplayer.drm');
+  final MethodChannel _channel = const MethodChannel('dev.flutter.videoplayer.drm');
 
   /// Attempts to open the given [dataSource] and load metadata about the video.
   Future<void> initialize() async {
-    final bool allowBackgroundPlayback =
-        videoPlayerOptions?.allowBackgroundPlayback ?? false;
+    final bool allowBackgroundPlayback = videoPlayerOptions?.allowBackgroundPlayback ?? false;
     if (!allowBackgroundPlayback) {
       _lifeCycleObserver = _VideoAppLifeCycleObserver(this);
     }
@@ -394,12 +383,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     if (videoPlayerOptions?.mixWithOthers != null) {
-      await _videoPlayerPlatform
-          .setMixWithOthers(videoPlayerOptions!.mixWithOthers);
+      await _videoPlayerPlatform.setMixWithOthers(videoPlayerOptions!.mixWithOthers);
     }
 
-    _playerId = (await _videoPlayerPlatform.create(dataSourceDescription)) ??
-        kUninitializedPlayerId;
+    _playerId = (await _videoPlayerPlatform.create(dataSourceDescription)) ?? kUninitializedPlayerId;
     _creatingCompleter!.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
@@ -462,8 +449,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (drmConfigs?.licenseCallback != null) {
       _channel.setMethodCallHandler((MethodCall call) async {
         if (call.method == 'requestLicense') {
-          final Map<dynamic, dynamic> argumentsMap =
-              call.arguments as Map<dynamic, dynamic>;
+          final Map<dynamic, dynamic> argumentsMap = call.arguments as Map<dynamic, dynamic>;
           final Uint8List message = argumentsMap['message']! as Uint8List;
           return drmConfigs!.licenseCallback!(message);
         } else {
@@ -482,9 +468,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       }
     }
 
-    _eventSubscription = _videoPlayerPlatform
-        .videoEventsFor(_playerId)
-        .listen(eventListener, onError: errorListener);
+    _eventSubscription = _videoPlayerPlatform.videoEventsFor(_playerId).listen(eventListener, onError: errorListener);
     return initializingCompleter.future;
   }
 
@@ -885,8 +869,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   }
 
   Rect _getCurrentRect() {
-    final RenderObject? renderObject =
-        _videoBoxKey.currentContext?.findRenderObject();
+    final RenderObject? renderObject = _videoBoxKey.currentContext?.findRenderObject();
     if (renderObject == null) {
       return Rect.zero;
     }
@@ -1005,8 +988,7 @@ class _VideoScrubberState extends State<_VideoScrubber> {
         seekToRelativePosition(details.globalPosition);
       },
       onHorizontalDragEnd: (DragEndDetails details) {
-        if (_controllerWasPlaying &&
-            controller.value.position != controller.value.duration.end) {
+        if (_controllerWasPlaying && controller.value.position != controller.value.duration.end) {
           controller.play();
         }
       },

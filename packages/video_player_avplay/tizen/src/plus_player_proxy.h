@@ -1,9 +1,9 @@
-// Copyright 2022 Samsung Electronics Co., Ltd. All rights reserved.
+// Copyright 2023 Samsung Electronics Co., Ltd. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef FLUTTER_PLUGIN_PLUSPLAYER_WRAPPER_H
-#define FLUTTER_PLUGIN_PLUSPLAYER_WRAPPER_H
+#ifndef FLUTTER_PLUGIN_PLUS_PLAYER_PROXY_H_
+#define FLUTTER_PLUGIN_PLUS_PLAYER_PROXY_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -14,8 +14,8 @@
 #include <string>
 #include <vector>
 
-#define PLUS_PLAYER_EXPORT __attribute__((visibility("default")))
 #define PLUSPLAYER_ERROR_CLASS TIZEN_ERROR_PLAYER | 0x20
+
 /* This is for custom defined player error. */
 #define PLUSPLAYER_CUSTOM_ERROR_CLASS TIZEN_ERROR_PLAYER | 0x1000
 
@@ -41,11 +41,6 @@ enum TrackType {
   kTrackTypeMax
 };
 
-enum PlayerType {
-  kDefault,
-  kDASH,
-};
-
 enum class DisplayRotation { kNone, kRotate90, kRotate180, kRotate270 };
 
 enum class State {
@@ -56,6 +51,11 @@ enum class State {
   kReady,            /**< Player is ready to play(start) */
   kPlaying,          /**< Player is playing media */
   kPaused            /**< Player is paused while playing media */
+};
+
+enum PlayerType {
+  kDefault,
+  kDASH,
 };
 
 struct Geometry {
@@ -160,55 +160,11 @@ enum class StreamingMessageType {
   kConfigLowLatency,
   kCurlErrorDebugInfo
 };
-enum class SourceType {
-  kNone,
-  kBase,
-  kHttp,
-  kHls,
-  kDash,
-  kSmooth,
-  kFile,
-  kExternalSubtitle,
-  kNotFound,
-  kMax
-};
-
-enum class ContentFormat {
-  kNone,
-  kMP4Mov,
-  kMpegts,
-  k3GpMov,
-  kAudioMpeg,
-  kAudioMpegAac,
-  kMkv,
-  kAvi,
-  kVideoAsf,
-  kAppXid3,
-  kAudioOgg,
-  kAudioFlac,
-  kFlv,
-  kVideoMpeg,
-  kUnknown
-};
-
-enum class DecodedVideoFrameBufferType {
-  kNone,
-  kCopy,
-  kReference,
-  kScale,
-  kManualCopy,
-};
-enum class RscType { kVideoRenderer };
 
 struct MessageParam {
   std::string data;
   int size = 0;
   int code = 0;  // Error or warning code
-};
-struct PlayerAppInfo {
-  std::string id;      /**< App id */
-  std::string version; /**< App version */
-  std::string type;    /**< App type. ex)"MSE", "HTML5", etc.. */
 };
 
 const int kInvalidTrackIndex = -1;
@@ -300,7 +256,6 @@ enum class Type {
   kWidevineCdm = 8,
   kMax
 };
-
 struct Property {
   Type type = Type::kNone;           // Drm type
   DrmHandle handle = 0;              // Drm handle
@@ -316,9 +271,7 @@ enum class SubtitleType { kText, kPicture, kInvalid };
 
 }  // namespace plusplayer
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+typedef void* PlusPlayerHandle;
 
 typedef void (*OnPlayerPrepared)(bool ret, void* user_data);
 typedef void (*OnPlayerSeekCompleted)(void* user_data);
@@ -333,13 +286,17 @@ typedef void (*OnPlayerErrorMessage)(const plusplayer::ErrorType& error_code,
 typedef void (*OnPlayerAdaptiveStreamingControl)(
     const plusplayer::StreamingMessageType& type,
     const plusplayer::MessageParam& msg, void* user_data);
+
 typedef void (*OnPlayerDrmInitData)(int* drmhandle, unsigned int len,
                                     unsigned char* psshdata,
                                     plusplayer::TrackType type,
                                     void* user_data);
 typedef void (*OnPlayerClosedCaptionData)(std::unique_ptr<char[]> data,
                                           const int size, void* user_data);
-typedef void (*OnPlayerCueEvent)(const char* CueData, void* userdata);
+typedef void (*OnPlayerCueEvent_65)(const char* CueData, void* userdata);
+typedef void (*OnPlayerCueEvent_60)(const char* msgType,
+                                    const uint64_t timestamp,
+                                    unsigned int duration, void* userdata);
 typedef void (*OnPlayerDateRangeEvent)(const char* DateRangeData,
                                        void* user_data);
 typedef void (*OnPlayerStopReachEvent)(bool StopReach, void* user_data);
@@ -352,7 +309,7 @@ typedef void (*OnPlayerSubtitleData)(char* data, const int size,
                                      const plusplayer::SubtitleType& type,
                                      const uint64_t duration, void* user_data);
 
-struct PlusplayerListener {
+struct PlusPlayerListener {
   OnPlayerPrepared prepared_callback{nullptr};
   OnPlayerSeekCompleted seek_completed_callback{nullptr};
   OnPlayerResourceConflicted resource_conflicted_callback{nullptr};
@@ -364,7 +321,8 @@ struct PlusplayerListener {
   OnPlayerAdaptiveStreamingControl adaptive_streaming_control_callback{nullptr};
   OnPlayerDrmInitData drm_init_data_callback{nullptr};
   OnPlayerClosedCaptionData closed_caption_data_callback{nullptr};
-  OnPlayerCueEvent cue_event_callback{nullptr};
+  OnPlayerCueEvent_65 cue_event_callback_65{nullptr};
+  OnPlayerCueEvent_60 cue_event_callback_60{nullptr};
   OnPlayerDateRangeEvent data_range_event_callback{nullptr};
   OnPlayerStopReachEvent stop_reach_event_callback{nullptr};
   OnPlayerCueOutContEvent cue_out_cont_event_callback{nullptr};
@@ -374,165 +332,126 @@ struct PlusplayerListener {
   OnPlayerSubtitleData subtitle_data_callback{nullptr};
 };
 
-struct Plusplayer;
-typedef struct Plusplayer* PlusplayerRef;
+class PlusPlayerProxy {
+ public:
+  static PlusPlayerProxy& GetInstance() {
+    static PlusPlayerProxy instance;
+    return instance;
+  }
 
-PLUS_PLAYER_EXPORT PlusplayerRef CreatePlayer(plusplayer::PlayerType type);
+  ~PlusPlayerProxy();
 
-PLUS_PLAYER_EXPORT bool Activate(PlusplayerRef player,
-                                 const plusplayer::TrackType type);
+  PlusPlayerProxy(const PlusPlayerProxy&) = delete;
 
-PLUS_PLAYER_EXPORT bool Deactivate(PlusplayerRef player,
-                                   const plusplayer::TrackType type);
+  PlusPlayerProxy& operator=(const PlusPlayerProxy&) = delete;
 
-PLUS_PLAYER_EXPORT bool SetVolume(PlusplayerRef player, int volume);
+  PlusPlayerHandle CreatePlayer(plusplayer::PlayerType type);
 
-PLUS_PLAYER_EXPORT bool Open(PlusplayerRef player, const std::string& uri);
+  bool Open(PlusPlayerHandle player, const std::string& uri);
 
-PLUS_PLAYER_EXPORT void SetAppId(PlusplayerRef player,
-                                 const std::string& app_id);
+  bool Close(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT void SetPrebufferMode(PlusplayerRef player,
-                                         bool is_prebuffer_mode);
+  void SetAppId(PlusPlayerHandle player, const std::string& app_id);
 
-PLUS_PLAYER_EXPORT void SetAppInfo(PlusplayerRef player,
-                                   const plusplayer::PlayerAppInfo& app_info);
+  void SetPrebufferMode(PlusPlayerHandle player, bool is_prebuffer_mode);
 
-PLUS_PLAYER_EXPORT bool StopSource(PlusplayerRef player);
+  bool StopSource(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool ChangeSource(
-    PlusplayerRef player, const std::string& uri,
-    const plusplayer::SourceType source_type,
-    const plusplayer::ContentFormat format_type,
-    const uint64_t time_milliseconds, const bool is_seamless);
+  bool SetDisplay(PlusPlayerHandle player, const plusplayer::DisplayType& type,
+                  const uint32_t serface_id, const int x, const int y,
+                  const int w, const int h);
 
-PLUS_PLAYER_EXPORT bool Prepare(PlusplayerRef player);
+  bool SetDisplayMode(PlusPlayerHandle player,
+                      const plusplayer::DisplayMode& mode);
 
-PLUS_PLAYER_EXPORT bool PrepareAsync(PlusplayerRef player);
+  bool SetDisplayRoi(PlusPlayerHandle player, const plusplayer::Geometry& roi);
 
-PLUS_PLAYER_EXPORT bool Start(PlusplayerRef player);
+  bool SetDisplayRotate(PlusPlayerHandle player,
+                        const plusplayer::DisplayRotation& rotate);
 
-PLUS_PLAYER_EXPORT bool Stop(PlusplayerRef player);
+  bool GetDisplayRotate(PlusPlayerHandle player,
+                        plusplayer::DisplayRotation* rotate);
 
-PLUS_PLAYER_EXPORT void SetDrm(PlusplayerRef player,
-                               const plusplayer::drm::Property& property);
+  bool SetDisplayVisible(PlusPlayerHandle player, bool is_visible);
 
-PLUS_PLAYER_EXPORT bool Pause(PlusplayerRef player);
+  bool SetAudioMute(PlusPlayerHandle player, bool is_mute);
 
-PLUS_PLAYER_EXPORT bool Resume(PlusplayerRef player);
+  plusplayer::State GetState(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool Close(PlusplayerRef player);
+  bool GetDuration(PlusPlayerHandle player, int64_t* duration_in_milliseconds);
 
-PLUS_PLAYER_EXPORT bool Seek(PlusplayerRef player,
-                             const uint64_t time_millisecond);
+  bool GetPlayingTime(PlusPlayerHandle player, uint64_t* time_in_milliseconds);
 
-PLUS_PLAYER_EXPORT void SetStopPosition(PlusplayerRef player,
-                                        const uint64_t time_millisecond);
+  bool SetPlaybackRate(PlusPlayerHandle player, const double speed);
 
-PLUS_PLAYER_EXPORT bool Suspend(PlusplayerRef player);
+  bool Prepare(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool Restore(PlusplayerRef player, plusplayer::State state);
+  bool PrepareAsync(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool GetMemento(PlusplayerRef player,
-                                   plusplayer::PlayerMemento* memento);
+  bool Start(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetDisplay(PlusplayerRef player,
-                                   const plusplayer::DisplayType& type,
-                                   const uint32_t serface_id, const int x,
-                                   const int y, const int w, const int h);
+  bool Stop(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetDisplayMode(PlusplayerRef player,
-                                       const plusplayer::DisplayMode& mode);
+  bool Pause(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetDisplayRoi(PlusplayerRef player,
-                                      const plusplayer::Geometry& roi);
+  bool Resume(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetDisplayRotate(
-    PlusplayerRef player, const plusplayer::DisplayRotation& rotate);
+  bool Seek(PlusPlayerHandle player, const uint64_t time_millisecond);
 
-PLUS_PLAYER_EXPORT bool GetDisplayRotate(PlusplayerRef player,
-                                         plusplayer::DisplayRotation* rotate);
+  void SetStopPosition(PlusPlayerHandle player,
+                       const uint64_t time_millisecond);
 
-PLUS_PLAYER_EXPORT bool GetDisplayRotationSupport(PlusplayerRef player,
-                                                  bool& can_rotate);
+  bool Suspend(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool IsRotatableDevice(PlusplayerRef player);
+  bool Restore(PlusPlayerHandle player, plusplayer::State state);
 
-PLUS_PLAYER_EXPORT bool SetDisplayVisible(PlusplayerRef player,
-                                          bool is_visible);
+  bool GetVideoSize(PlusPlayerHandle player, int* width, int* height);
 
-PLUS_PLAYER_EXPORT bool SetAudioMute(PlusplayerRef player, bool is_mute);
+  void DestroyPlayer(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetBufferConfig(
-    PlusplayerRef player, const std::pair<std::string, int>& config);
+  int GetSurfaceId(PlusPlayerHandle player, void* window);
 
-PLUS_PLAYER_EXPORT plusplayer::State GetState(PlusplayerRef player);
+  void SetDrm(PlusPlayerHandle player,
+              const plusplayer::drm::Property& property);
 
-PLUS_PLAYER_EXPORT std::string GetTrackLanguageCode(PlusplayerRef player,
-                                                    plusplayer::TrackType type,
-                                                    int index);
+  void DrmLicenseAcquiredDone(PlusPlayerHandle player,
+                              plusplayer::TrackType type);
 
-PLUS_PLAYER_EXPORT int GetTrackCount(PlusplayerRef player,
-                                     plusplayer::TrackType type);
+  void* Dlsym(const char* name);
 
-PLUS_PLAYER_EXPORT std::vector<plusplayer::Track> GetTrackInfo(
-    PlusplayerRef player);
+  void RegisterListener(PlusPlayerHandle player, PlusPlayerListener* listener,
+                        void* user_data);
 
-PLUS_PLAYER_EXPORT std::vector<plusplayer::Track> GetActiveTrackInfo(
-    PlusplayerRef player);
+  void UnregisterListener(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool GetDuration(PlusplayerRef player,
-                                    int64_t* duration_in_milliseconds);
+  bool SetBufferConfig(PlusPlayerHandle player,
+                       const std::pair<std::string, int>& config);
 
-PLUS_PLAYER_EXPORT bool GetPlayingTime(PlusplayerRef player,
-                                       uint64_t* time_in_milliseconds);
+  std::vector<plusplayer::Track> GetTrackInfo(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetSilentSubtitle(PlusplayerRef player, bool onoff);
+  std::vector<plusplayer::Track> GetActiveTrackInfo(PlusPlayerHandle player);
 
-PLUS_PLAYER_EXPORT bool SetPlaybackRate(PlusplayerRef player,
-                                        const double speed);
+  void SetStreamingProperty(PlusPlayerHandle player, const std::string& type,
+                            const std::string& value);
 
-PLUS_PLAYER_EXPORT bool SetPlaybackRateBySeek(PlusplayerRef player,
-                                              const double rate);
+  bool Activate(PlusPlayerHandle player, const plusplayer::TrackType type);
 
-PLUS_PLAYER_EXPORT void DestroyPlayer(PlusplayerRef player);
+  bool Deactivate(PlusPlayerHandle player, const plusplayer::TrackType type);
 
-PLUS_PLAYER_EXPORT void DrmLicenseAcquiredDone(PlusplayerRef player,
-                                               plusplayer::TrackType type);
+  bool SetVolume(PlusPlayerHandle player, int volume);
 
-PLUS_PLAYER_EXPORT void SetStreamingProperty(PlusplayerRef player,
-                                             const std::string& type,
-                                             const std::string& value);
+  bool GetMemento(PlusPlayerHandle player, plusplayer::PlayerMemento* memento);
 
-PLUS_PLAYER_EXPORT std::string GetStreamingProperty(PlusplayerRef player,
-                                                    const std::string& type);
+  std::string GetStreamingProperty(PlusPlayerHandle player,
+                                   const std::string& type);
 
-PLUS_PLAYER_EXPORT bool SelectTrack(PlusplayerRef player,
-                                    plusplayer::TrackType type, int index);
+  int GetTrackCount(PlusPlayerHandle player, plusplayer::TrackType type);
 
-PLUS_PLAYER_EXPORT bool SetSubtitlePath(PlusplayerRef player,
-                                        const std::string& path);
+  bool SelectTrack(PlusPlayerHandle player, plusplayer::TrackType type,
+                   int index);
 
-PLUS_PLAYER_EXPORT bool SetPreferredLanguage(
-    PlusplayerRef player, plusplayer::TrackType type,
-    const std::string& primary_language, const std::string& secondary_language,
-    const std::string& tertiary_language);
-
-PLUS_PLAYER_EXPORT void SetVideoFrameBufferType(
-    PlusplayerRef player, const plusplayer::DecodedVideoFrameBufferType type);
-
-PLUS_PLAYER_EXPORT bool GetVirtualRscId(PlusplayerRef player,
-                                        const plusplayer::RscType type,
-                                        int* virtual_id);
-
-PLUS_PLAYER_EXPORT void RegisterListener(PlusplayerRef player,
-                                         PlusplayerListener* listener,
-                                         void* user_data);
-
-PLUS_PLAYER_EXPORT void UnregisterListener(PlusplayerRef player);
+ private:
+  PlusPlayerProxy();
+  void* plus_player_lib_ = nullptr;
 };
-#if defined(__cplusplus)
-// extern "C"
-#endif
-
-#endif  // FLUTTER_PLUGIN_PLUSPLAYER_WRAPPER_H
+#endif  // FLUTTER_PLUGIN_PLUS_PLAYER_PROXY_H_

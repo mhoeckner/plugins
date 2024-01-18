@@ -11,7 +11,7 @@
 #include <string>
 
 #include "drm_manager.h"
-#include "plusplayer/plusplayer_wrapper.h"
+#include "plus_player_proxy.h"
 #include "video_player.h"
 
 class PlusPlayer : public VideoPlayer {
@@ -79,8 +79,8 @@ class PlusPlayer : public VideoPlayer {
   static void OnChangeSourceDone(bool ret, void *user_data);
   static void OnStateChangedToPlaying(void *user_data);
 
-  PlusplayerRef player_ = nullptr;
-  PlusplayerListener listener_;
+  PlusPlayerHandle player_ = nullptr;
+  PlusPlayerListener listener_;
   std::unique_ptr<DrmManager> drm_manager_;
   std::string video_format_;
   bool is_buffering_ = false;
