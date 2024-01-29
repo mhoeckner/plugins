@@ -223,6 +223,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
+        streamingProperty = null,
         super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// Constructs a [VideoPlayerController] playing a video from obtained from
@@ -242,6 +243,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     this.httpHeaders = const <String, String>{},
     this.drmConfigs,
     this.playerOptions,
+    this.streamingProperty,
   })  : dataSourceType = DataSourceType.network,
         package = null,
         super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
@@ -261,6 +263,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
+        streamingProperty = null,
         super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// Constructs a [VideoPlayerController] playing a video from a contentUri.
@@ -280,6 +283,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         httpHeaders = const <String, String>{},
         drmConfigs = null,
         playerOptions = const <String, dynamic>{},
+        streamingProperty = null,
         super(VideoPlayerValue(duration: DurationRange(Duration.zero, Duration.zero)));
 
   /// The URI to the video file. This will be in different formats depending on
@@ -298,6 +302,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// Player Options used for add additional parameters.
   /// Only for [VideoPlayerController.network].
   final Map<String, dynamic>? playerOptions;
+
+  /// Sets specific feature values for HTTP, MMS, or specific streaming engine (Smooth Streaming, HLS, DASH, DivX Plus Streaming, or Widevine).
+  /// The available streaming properties depend on the streaming protocol or engine.
+  /// Only for [VideoPlayerController.network].
+  final Map<String, String>? streamingProperty;
 
   /// **Android only**. Will override the platform's generic file format
   /// detection with whatever is set here.
@@ -366,6 +375,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           httpHeaders: httpHeaders,
           drmConfigs: drmConfigs,
           playerOptions: playerOptions,
+          streamingProperty: streamingProperty,
         );
         break;
       case DataSourceType.file:
