@@ -88,12 +88,12 @@ int64_t PlusPlayer::Create(const std::string &uri,
     std::string cookie = flutter_common::GetValue(create_message.http_headers(),
                                                   "Cookie", std::string());
     if (!cookie.empty()) {
-      SetStreamingProperty(player_, "COOKIE", cookie);
+      instance.SetStreamingProperty(player_, "COOKIE", cookie);
     }
     std::string user_agent = flutter_common::GetValue(
         create_message.http_headers(), "User-Agent", std::string());
     if (!user_agent.empty()) {
-      SetStreamingProperty(player_, "USER_AGENT", user_agent);
+      instance.SetStreamingProperty(player_, "USER_AGENT", user_agent);
     }
   }
 
@@ -102,7 +102,7 @@ int64_t PlusPlayer::Create(const std::string &uri,
     std::string adaptive_info = flutter_common::GetValue(
         create_message.streaming_property(), "ADAPTIVE_INFO", std::string());
     if (!adaptive_info.empty()) {
-      SetStreamingProperty(player_, "ADAPTIVE_INFO", adaptive_info);
+      instance.SetStreamingProperty(player_, "ADAPTIVE_INFO", adaptive_info);
     }
   }
 
@@ -149,7 +149,7 @@ int64_t PlusPlayer::Create(const std::string &uri,
     bool is_prebuffer_mode = flutter_common::GetValue(
         create_message.player_options(), "prebufferMode", false);
     if (is_prebuffer_mode) {
-      SetPrebufferMode(player_, true);
+      instance.SetPrebufferMode(player_, true);
       is_prebuffer_mode_ = true;
     }
   }

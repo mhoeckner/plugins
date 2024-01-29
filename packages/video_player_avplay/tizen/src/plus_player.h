@@ -13,7 +13,6 @@
 #include "drm_manager.h"
 #include "messages.h"
 #include "plus_player_proxy.h"
-#include "plusplayer/plusplayer_wrapper.h"
 #include "video_player.h"
 
 class PlusPlayer : public VideoPlayer {

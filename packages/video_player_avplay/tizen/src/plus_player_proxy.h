@@ -14,8 +14,8 @@
 #include <string>
 #include <vector>
 
+#define PLUS_PLAYER_EXPORT __attribute__((visibility("default")))
 #define PLUSPLAYER_ERROR_CLASS TIZEN_ERROR_PLAYER | 0x20
-
 /* This is for custom defined player error. */
 #define PLUSPLAYER_CUSTOM_ERROR_CLASS TIZEN_ERROR_PLAYER | 0x1000
 
@@ -160,11 +160,55 @@ enum class StreamingMessageType {
   kConfigLowLatency,
   kCurlErrorDebugInfo
 };
+enum class SourceType {
+  kNone,
+  kBase,
+  kHttp,
+  kHls,
+  kDash,
+  kSmooth,
+  kFile,
+  kExternalSubtitle,
+  kNotFound,
+  kMax
+};
+
+enum class ContentFormat {
+  kNone,
+  kMP4Mov,
+  kMpegts,
+  k3GpMov,
+  kAudioMpeg,
+  kAudioMpegAac,
+  kMkv,
+  kAvi,
+  kVideoAsf,
+  kAppXid3,
+  kAudioOgg,
+  kAudioFlac,
+  kFlv,
+  kVideoMpeg,
+  kUnknown
+};
+
+enum class DecodedVideoFrameBufferType {
+  kNone,
+  kCopy,
+  kReference,
+  kScale,
+  kManualCopy,
+};
+enum class RscType { kVideoRenderer };
 
 struct MessageParam {
   std::string data;
   int size = 0;
   int code = 0;  // Error or warning code
+};
+struct PlayerAppInfo {
+  std::string id;      /**< App id */
+  std::string version; /**< App version */
+  std::string type;    /**< App type. ex)"MSE", "HTML5", etc.. */
 };
 
 const int kInvalidTrackIndex = -1;
@@ -256,6 +300,7 @@ enum class Type {
   kWidevineCdm = 8,
   kMax
 };
+
 struct Property {
   Type type = Type::kNone;           // Drm type
   DrmHandle handle = 0;              // Drm handle
@@ -286,17 +331,13 @@ typedef void (*OnPlayerErrorMessage)(const plusplayer::ErrorType& error_code,
 typedef void (*OnPlayerAdaptiveStreamingControl)(
     const plusplayer::StreamingMessageType& type,
     const plusplayer::MessageParam& msg, void* user_data);
-
 typedef void (*OnPlayerDrmInitData)(int* drmhandle, unsigned int len,
                                     unsigned char* psshdata,
                                     plusplayer::TrackType type,
                                     void* user_data);
 typedef void (*OnPlayerClosedCaptionData)(std::unique_ptr<char[]> data,
                                           const int size, void* user_data);
-typedef void (*OnPlayerCueEvent_65)(const char* CueData, void* userdata);
-typedef void (*OnPlayerCueEvent_60)(const char* msgType,
-                                    const uint64_t timestamp,
-                                    unsigned int duration, void* userdata);
+typedef void (*OnPlayerCueEvent)(const char* CueData, void* userdata);
 typedef void (*OnPlayerDateRangeEvent)(const char* DateRangeData,
                                        void* user_data);
 typedef void (*OnPlayerStopReachEvent)(bool StopReach, void* user_data);
@@ -321,8 +362,7 @@ struct PlusPlayerListener {
   OnPlayerAdaptiveStreamingControl adaptive_streaming_control_callback{nullptr};
   OnPlayerDrmInitData drm_init_data_callback{nullptr};
   OnPlayerClosedCaptionData closed_caption_data_callback{nullptr};
-  OnPlayerCueEvent_65 cue_event_callback_65{nullptr};
-  OnPlayerCueEvent_60 cue_event_callback_60{nullptr};
+  OnPlayerCueEvent cue_event_callback{nullptr};
   OnPlayerDateRangeEvent data_range_event_callback{nullptr};
   OnPlayerStopReachEvent stop_reach_event_callback{nullptr};
   OnPlayerCueOutContEvent cue_out_cont_event_callback{nullptr};
@@ -454,4 +494,5 @@ class PlusPlayerProxy {
   PlusPlayerProxy();
   void* plus_player_lib_ = nullptr;
 };
+
 #endif  // FLUTTER_PLUGIN_PLUS_PLAYER_PROXY_H_
