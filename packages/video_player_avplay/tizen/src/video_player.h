@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "ecore_wl2_window_proxy.h"
+#include "log.h"
 #include "messages.h"
 
 class VideoPlayer {
@@ -57,7 +58,7 @@ class VideoPlayer {
   };
 
   virtual void SetStreamingProperty(const std::string &type,
-                                    const std::string &value){};
+                                    const std::string &value) {};
 
  protected:
   virtual void GetVideoSize(int32_t *width, int32_t *height) = 0;
@@ -96,14 +97,38 @@ namespace flutter_common {
 template <typename T>
 inline const T GetValue(const flutter::EncodableMap *map,
                         const std::string &key, T &&default_value) {
+  LOG_INFO("GetValue for key %s ....", key.c_str());
   if (map == nullptr || map->empty()) {
     return std::move(default_value);
   }
 
+  for (auto it = map->begin(); it != map->end(); ++it) {
+    if (std::holds_alternative<std::string>(it->first)) {
+      try {
+        std::string mapKey = std::get<std::string>(it->first);
+        if (mapKey == "startPosition") {
+          int value = std::get<int>(it->second);
+          LOG_INFO("GetValue map contains key: %s value: %d", mapKey.c_str(),
+                   value);
+        } else if (mapKey == "prebufferMode") {
+          bool value = std::get<bool>(it->second);
+          LOG_INFO("GetValue map contains key: %s value: %d", mapKey.c_str(),
+                   value);
+        } else {
+          LOG_INFO("GetValue map contains key: %s - but not supported :(",
+                   mapKey.c_str());
+        }
+      } catch (...) {
+      }
+    }
+  }
+
   auto it = map->find(flutter::EncodableValue(key));
   if (it != map->end() && std::holds_alternative<T>(it->second)) {
+    LOG_INFO("GetValue -> found key %s -> send back...", key.c_str());
     return std::get<T>(it->second);
   }
+  LOG_INFO("GetValue for key %s failed :(", key.c_str());
   return std::move(default_value);
 }
 
